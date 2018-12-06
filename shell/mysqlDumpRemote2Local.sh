@@ -111,7 +111,8 @@ function doDump {
         expect \"*]#\"
         send \"ls ${DB_BACKUP_PATH} &>/dev/null && cd ${DB_BACKUP_PATH} || mkdir -p ${DB_BACKUP_PATH} && cd ${DB_BACKUP_PATH} \r\"
         send \"mysqldump -u${DB_USER} -p${DB_PWD} -P ${DB_PORT} ${DB_NAME} > ${DUMP_FILENAME}.sql \r\"
-        send \"tar -zcvf ${DUMP_FILENAME}.tar.gz ${DUMP_FILENAME}.sql --remove-files  \r\"
+        send \"sha1sum ${DUMP_FILENAME}.sql > ${DUMP_FILENAME}.sha1sum \r\"
+        send \"tar -zcvf ${DUMP_FILENAME}.tar.gz ${DUMP_FILENAME}.* --remove-files  \r\"
         send \"exit \r\"
 
         interact
@@ -131,7 +132,10 @@ function doDump {
 
     if [ -f $DUMP_FILENAME.tar.gz ]; then
         tar zxvf $DUMP_FILENAME.tar.gz
-        if [ "`echo $?`" -eq "0" ]; then
+        # 检查文件完整性
+        SHA1SUM_REMOTE=`cat $DUMP_FILENAME.sha1sum | awk '{print $1}'`
+        SHA1SUM_LOCAL=`sha1sum $DUMP_FILENAME.sql | awk '{print $1}'`
+        if [ "$SHA1SUM_REMOTE" == "$SHA1SUM_LOCAL" ]; then
             echo -e "\n\033[32m==>\033[0m 操作结束，文件位置："$BASE_PATH/$DUMP_FILENAME.sql" \n"
         else
             echo -e "\n\033[31m下载的文件不完整，请使用上面的 scp 命令手动拉取\033[0m"
