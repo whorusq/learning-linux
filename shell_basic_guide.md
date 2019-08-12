@@ -24,6 +24,7 @@ Shell 脚本入门及语法速查
 	- 4.5. [for 循环](#45-for-循环)
 	- 4.6. [无限循环](#46-无限循环)
 	- 4.7. [退出循环](#47-退出循环)
+    - 4.8. [select 语句](#48-select-语句)
 5. [输入、输出重定向](#5-输入输出重定向)
 	- 5.1. [命令列表](#51-命令列表)
 	- 5.2. [/dev/null 文件](#52-devnull-文件)
@@ -86,7 +87,7 @@ echo "hello world"
 - 方式一：用一对 `{}` 括起来，定义成一个函数，没有地方调用即达到注释的效果。
 - 方式二：
 
-    ```
+    ```bash
     :<<EOF
     注释内容...
     注释内容...
@@ -106,10 +107,10 @@ echo "hello world"
     - `=` 两边不能有空格；
     - 不能使用标点符号；
     - 不能使用 bash 里的关键字（可用 `help` 命令查看保留关键字）。
-     
+
     如下示例：
 
-    ```
+    ```bash
     VAR1="whoru"
     VAR2=100
     var3=/data/www
@@ -118,28 +119,28 @@ echo "hello world"
 
 - 访问变量 `$VAR1` 或 `$(var1)`，其中，加花括号是为了帮助解释器识别变量的边界。
 - 设置变量只读 `readonly VAR1`
-- 删除变量（**不适用于只读变量！**） `unset VAR1` 
+- 删除变量（**不适用于只读变量！**） `unset VAR1`
 
 #### 2.2. 字符串
 
 - 值用双引号 `""` 或单引号 `''` 表示
     - 单引号单限制：
         - 单引号里的任何字符都会原样输出；
-        - 单引号字符串中的变量是无效的； 
+        - 单引号字符串中的变量是无效的；
     - 双引号的优点：
         - 双引号里可以有变量；
         - 双引号里可以出现转义字符；
 - 其它
 
-    ```
-    # 字符串拼接 
+    ```bash
+    # 字符串拼接
     name="xiaoming"
     var2="hello, "$name # 输出 hello, xiaoming
-    
+
     # 获取字符串长度
     string="abcd"
     echo ${#string} # 输出 4
-    
+
     # 提取子字符串
     msg="zhangsan is a good man"
     echo ${msg:1:4} # 输出 hang
@@ -151,11 +152,11 @@ echo "hello world"
 - 数组元素的下标由 0 开始，获取数组元素要用到下标。
 - 定义：
 
-    ```
+    ```bash
     array1=(value0 value1 value2 value3)
-    
-    或
-    
+
+    # 或
+
     array2[0]=value0
     array2[1]=value1
     array2[2]=value2
@@ -163,27 +164,47 @@ echo "hello world"
 
 - 读取
 
-    ```
+    ```bash
     # 指定下标的元素
-    echo ${array2[2]}; // 输出 value2
-    
+    echo ${array2[2]}; # 输出 value2
+
+    # 从下标 1 开始获取
+    echo ${array2[@]:1}; # 输出 value1 value2
+
+    # 从下标 1 开始，获取 1 个元素
+    echo ${array2[@]:1:1}; # 输出 value1
+
     # 获取数组所有元素
-    echo ${array2[*]}; // 输出 value0 value1 value2
+    echo ${array2[*]}; # 输出 value0 value1 value2
     echo ${array2[@]}
     ```
 
 - 获取数组元素个数
 
-    ```
-    echo ${#array2[@]}; // 输出 3
+    ```bash
+    echo ${#array2[@]}; # 输出 3
     echo ${#array2[*]};
     ```
 
-- 取得数组中指定下标元素的字符长度 
+- 取得数组中指定下标元素的字符长度
 
     ```bash
-    echo ${#array2[2]};
+    echo ${#array2[2]}; # 输出 6
     ```
+
+- 替换数组元素
+
+    ```bash
+    # 输出 value0 value2 value3
+    echo ${array1[@]/value1/}
+
+    # 输出 Talue0 Talue1 Talue2 Talue3
+    echo ${array5[@]/#v/T}
+
+    # 输出 value0 value1 valueT value3
+    echo ${array5[@]/%2/T}
+    ```
+
 
 #### 2.4. 传递参数
 
@@ -191,7 +212,7 @@ echo "hello world"
 
 如下脚本文件 `demo.sh`：
 
-```
+```bash
 #!/bin/bash
 
 echo "执行的文件名：$0";
@@ -202,7 +223,7 @@ echo "第三个参数为：$3";
 
 执行该文件，并传递参数，如下：
 
-```
+```bash
 ➜  ./demo3.sh param1 param2 param3
 执行的文件名：./demo3.sh
 第一个参数为：param1
@@ -299,17 +320,17 @@ str | 检测字符串是否为不为空 | `[ $a ]` 返回 true。
 ---|---|---
 `-b` | 检测文件是否是块设备文件 | `[ -b $file ]`
 `-c` | 检测文件是否是字符设备文件 | `[ -c $file ]`
-`-d` | 检测文件是否是目录 | `[ -d $file ]` 
-`-f` | 检测文件是否是普通文件（既不是目录，也不是设备文件） | `[ -f $file ]` 
-`-g` | 检测文件是否设置了 SGID 位 | `[ -g $file ]` 
-`-k` | 检测文件是否设置了粘着位(Sticky Bit) | `[ -k $file ]` 
-`-p` | 检测文件是否是有名管道 | `[ -p $file ]` 
-`-u` | 检测文件是否设置了 SUID 位 | `[ -u $file ]` 
-`-r` | 检测文件是否可读 | `[ -r $file ]` 
-`-w` | 检测文件是否可写 | `[ -w $file ]` 
-`-x` | 检测文件是否可执行 | `[ -x $file ]` 
-`-s` | 检测文件是否为非空（文件大小是否大于0）文件 | `[ -s $file ]` 
-`-e` | 检测文件（包括目录）是否存在 | `[ -e $file ]` 
+`-d` | 检测文件是否是目录 | `[ -d $file ]`
+`-f` | 检测文件是否是普通文件（既不是目录，也不是设备文件） | `[ -f $file ]`
+`-g` | 检测文件是否设置了 SGID 位 | `[ -g $file ]`
+`-k` | 检测文件是否设置了粘着位(Sticky Bit) | `[ -k $file ]`
+`-p` | 检测文件是否是有名管道 | `[ -p $file ]`
+`-u` | 检测文件是否设置了 SUID 位 | `[ -u $file ]`
+`-r` | 检测文件是否可读 | `[ -r $file ]`
+`-w` | 检测文件是否可写 | `[ -w $file ]`
+`-x` | 检测文件是否可执行 | `[ -x $file ]`
+`-s` | 检测文件是否为非空（文件大小是否大于0）文件 | `[ -s $file ]`
+`-e` | 检测文件（包括目录）是否存在 | `[ -e $file ]`
 
 ### 4. 流程控制
 
@@ -337,16 +358,16 @@ fi
 # 语法格式
 case 值 in
     模式1)
-        command1
-        command2
-        ...
-        commandN
+        command1-1
+        command1-22
+        .....
+        command1-N
         ;;
     模式2）
-        command1
-        command2
-        ...
-        commandN
+        command2-1
+        command2-2
+        .....
+        command2-N
         ;;
     *)
         commandDefault
@@ -359,19 +380,26 @@ esac
 
 用于不断执行一系列命令，也用于从输入文件中读取数据；命令通常为测试条件。其格式为：
 
-```
+```bash
 # 语法格式
 while condition
 do
     command
 done
+
+# 示例1：按行读取、输出一个文件的内容
+!#/bin/bash
+while read line
+do
+    echo $line
+done </etc/hosts
 ```
 
 #### 4.4. until 循环
 
 执行一系列命令直至条件为 true 时停止，它与 `while 循环` 在处理方式上刚好相反。
 
-```
+```bash
 # 语法格式
 until condition
 do
@@ -381,7 +409,7 @@ done
 
 #### 4.5. for 循环
 
-```
+```bash
 # 语法格式
 for var in item1 item2 ... itemN
 do
@@ -394,7 +422,7 @@ done
 
 #### 4.6. 无限循环
 
-```
+```bash
 # 语法1
 while :
 do
@@ -415,6 +443,29 @@ for (( ; ; ))
 
 * `break` 跳出整个循环，执行循环体后面的代码，支持 `break n` 退出多层嵌套循环
 * `continue` 结束当前循环，同样支持 `continue n` 退出多层
+
+#### 4.8. select 语句
+
+```bash
+#!/bin/bash
+
+OS_LIST="Ubuntu CentOS Fedora Arch"
+PS3="Select your OS type:"
+select os in $OS_LIST:
+do
+    echo "Yout reply is: $os"
+    break
+done
+
+# 输出
+$ ./select.sh
+1) Ubuntu
+2) CentOS
+3) Fedora
+4) Arch:
+Select your OS type:2
+Yout reply is: CentOS
+```
 
 ### 5. 输入、输出重定向
 
@@ -525,7 +576,7 @@ echo "\"It is a test\"" # 输出 "It is a test"
 
 # 显示变量
 #!/bin/sh
-NAME="xiaoming" 
+NAME="xiaoming"
 echo "$NAME It is a test" # 输出 xiaoming is a test
 
 # 显示换行
@@ -563,10 +614,10 @@ printf  format-string  [arguments...]
 示例：
 
 ```
-➜  printf "%-10s %-8s %-4s\n" 姓名 性别 体重kg  
-➜  printf "%-10s %-8s %-4.2f\n" 郭靖 男 66.1234 
-➜  printf "%-10s %-8s %-4.2f\n" 杨过 男 48.6543 
-➜  printf "%-10s %-8s %-4.2f\n" 郭芙 女 47.9876 
+➜  printf "%-10s %-8s %-4s\n" 姓名 性别 体重kg
+➜  printf "%-10s %-8s %-4.2f\n" 郭靖 男 66.1234
+➜  printf "%-10s %-8s %-4.2f\n" 杨过 男 48.6543
+➜  printf "%-10s %-8s %-4.2f\n" 郭芙 女 47.9876
 姓名     性别   体重kg
 郭靖     男      66.12
 杨过     男      48.65
@@ -594,7 +645,7 @@ abc
 def
 
 # 如果没有 arguments，那么 %s 用NULL代替，%d 用 0 代替
-➜  printf "%s and %d \n" 
+➜  printf "%s and %d \n"
  and 0
 ```
 
