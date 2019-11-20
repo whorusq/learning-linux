@@ -75,7 +75,7 @@ function ifGoon {
 }
 
 function doDump {
-    if [ -n "$SERVER_KEY" ]; then
+    if [ -z "$HOST_KEY" ]; then
         echo "未知的序号"
         exit 0
     fi
