@@ -32,14 +32,20 @@ Shell 脚本入门及语法速查
 6. [函数](#6-函数)
 	- 6.1. [基本语法](#61-基本语法)
 	- 6.2. [函数参数](#62-函数参数)
-7. [其它](#7-其它)
-	- 7.1. [echo 命令](#71-echo-命令)
-	- 7.2. [printf 命令](#72-printf-命令)
-	- 7.3. [test 命令](#73-test-命令)
-	- 7.4. [[ ... ] 与 [[ ... ]] 的区别](#74----与---)
-	- 7.5. [包含文件](#75-包含文件)
+7. [包含文件（封装函数库）](#7-包含文件（封装函数库）)
+8. [常用命令](#8-常用命令)
+	- 8.1. [find 命令](#81-find-命令)
+    - 8.2. [echo 命令](#82-echo-命令)
+	- 8.3. [printf 命令](#83-printf-命令)
+	- 8.4. [test 命令](#84-test-命令)
+9. [补充](#9-补充)
+	- 9.1. [变量替换](#91-变量替换)
+	- 9.2. [有类型变量](#92-有类型变量)
+	- 9.3. [使用 bc 进行浮点数运算](#93-使用-bc-进行浮点数运算)
+	- 9.4. [[ ... ] 与 [[ ... ]] 的区别](#94----与---)
 
 ---
+
 
 ### 1. Hello World
 
@@ -108,9 +114,8 @@ echo "hello world"
     - 不能使用标点符号；
     - 不能使用 bash 里的关键字（可用 `help` 命令查看保留关键字）。
 
-    如下示例：
-
     ```bash
+    # 示例
     VAR1="whoru"
     VAR2=100
     var3=/data/www
@@ -120,6 +125,10 @@ echo "hello world"
 - 访问变量 `$VAR1` 或 `$(var1)`，其中，加花括号是为了帮助解释器识别变量的边界。
 - 设置变量只读 `readonly VAR1`
 - 删除变量（**不适用于只读变量！**） `unset VAR1`
+- 局部、全局变量
+    - 不做特殊声明，shell 中所有变量都是**全局变量**。
+    - 可以使用关键字 `local` 定义局部变量。
+    - *如果函数内部和外部存在同名变量，则内部会覆盖外部*。
 
 #### 2.2. 字符串
 
@@ -140,10 +149,12 @@ echo "hello world"
     # 获取字符串长度
     string="abcd"
     echo ${#string} # 输出 4
+    echo `expr length "$string"` # 输出 4
 
     # 提取子字符串
     msg="zhangsan is a good man"
     echo ${msg:1:4} # 输出 hang
+    echo ${msg: -3} # 输出 man
     ```
 
 #### 2.3. 数组
@@ -166,45 +177,25 @@ echo "hello world"
 
     ```bash
     # 指定下标的元素
-    echo ${array2[2]}; # 输出 value2
-
-    # 从下标 1 开始获取
-    echo ${array2[@]:1}; # 输出 value1 value2
-
-    # 从下标 1 开始，获取 1 个元素
-    echo ${array2[@]:1:1}; # 输出 value1
+    ➜  echo ${array2[2]}; // 输出 value2
 
     # 获取数组所有元素
-    echo ${array2[*]}; # 输出 value0 value1 value2
-    echo ${array2[@]}
+    ➜  echo ${array2[*]}; // 输出 value0 value1 value2
+    ➜  echo ${array2[@]}
     ```
 
 - 获取数组元素个数
 
     ```bash
-    echo ${#array2[@]}; # 输出 3
-    echo ${#array2[*]};
+    ➜  echo ${#array2[@]}; // 输出 3
+    ➜  echo ${#array2[*]};
     ```
 
 - 取得数组中指定下标元素的字符长度
 
     ```bash
-    echo ${#array2[2]}; # 输出 6
+    ➜  echo ${#array2[2]};
     ```
-
-- 替换数组元素
-
-    ```bash
-    # 输出 value0 value2 value3
-    echo ${array1[@]/value1/}
-
-    # 输出 Talue0 Talue1 Talue2 Talue3
-    echo ${array5[@]/#v/T}
-
-    # 输出 value0 value1 valueT value3
-    echo ${array5[@]/%2/T}
-    ```
-
 
 #### 2.4. 传递参数
 
@@ -358,16 +349,16 @@ fi
 # 语法格式
 case 值 in
     模式1)
-        command1-1
-        command1-22
-        .....
-        command1-N
+        command1
+        command2
+        ...
+        commandN
         ;;
     模式2）
-        command2-1
-        command2-2
-        .....
-        command2-N
+        command1
+        command2
+        ...
+        commandN
         ;;
     *)
         commandDefault
@@ -386,13 +377,6 @@ while condition
 do
     command
 done
-
-# 示例1：按行读取、输出一个文件的内容
-!#/bin/bash
-while read line
-do
-    echo $line
-done </etc/hosts
 ```
 
 #### 4.4. until 循环
@@ -444,29 +428,6 @@ for (( ; ; ))
 * `break` 跳出整个循环，执行循环体后面的代码，支持 `break n` 退出多层嵌套循环
 * `continue` 结束当前循环，同样支持 `continue n` 退出多层
 
-#### 4.8. select 语句
-
-```bash
-#!/bin/bash
-
-OS_LIST="Ubuntu CentOS Fedora Arch"
-PS3="Select your OS type:"
-select os in $OS_LIST:
-do
-    echo "Yout reply is: $os"
-    break
-done
-
-# 输出
-$ ./select.sh
-1) Ubuntu
-2) CentOS
-3) Fedora
-4) Arch:
-Select your OS type:2
-Yout reply is: CentOS
-```
-
 ### 5. 输入、输出重定向
 
 #### 5.1. 命令列表
@@ -489,7 +450,7 @@ Yout reply is: CentOS
 
 示例：
 
-```
+```bash
 # 将 stdout 和 stderr 合并后重定向到 file
 ➜  command > file 2>&1
 ```
@@ -500,14 +461,14 @@ Yout reply is: CentOS
 
 如：
 
-```
+```bash
 # 屏蔽 stdout 和 stderr
 ➜  command > /dev/null 2>&1
 ```
 
 #### 5.3. Here 文档
 
-```
+```bash
 # 将两个 delimiter 之间的内容(document) 作为输入传递给 command。
 command << delimiter
 document
@@ -535,13 +496,16 @@ delimiter
 
 - `function` 关键字非必须；
 - 如果该函数不传入变量，这函数名的后面的括号可以不加；
-- `return` 非必须；默认返回最后一条命令的执行结果；
+- `return` 函数返回值
+    - 非必须，默认返回最后一条命令的执行结果；
+    - 它只能返回 1 ～ 255 之间的整数，通常只是用来供其它地方获取状态，比如 0 成功，1 或 非 0 失败；
+    - 也可以使用 `echo` 输出一个字符串作为函数的返回值。
 - 调用函数仅使用其函数名，如 `funcName`；
-- 所有函数在使用前必须定义，即函数调用必须要在函数声明之后。
+- **所有函数在使用前必须定义**，即函数调用必须要在函数声明之后。
 
 #### 6.2. 函数参数
 
-```
+```bash
 func() {
     echo "第一个参数为 $1 !"
     echo "第二个参数为 $2 !"
@@ -559,42 +523,152 @@ func param1 param2 param3
 - 在函数体内部，通过 `$n` 的形式来获取参数的值，例如：$1 表示第一个参数，$2 表示第二个参数；
 - 当 n >= 10 时，需要使用 `${n}` 来获取参数。
 
-### 7. 其它
+### 7. 包含文件（封装函数库）
 
-#### 7.1. echo 命令
+通常我们将公用的函数抽离到单独文件，以便重复调用，减少冗余代码。
+
+对于一个函数库文件：
+
+- 后缀名任意，通常使用 `.lib` 进行标识；
+- 一般不授予可执行权限；
+- 不需要跟脚本放在同一级目录，只需在脚本引用时指定；
+- 通常第一行一般使用 `#!/bin/echo` 输出警告信息，避免用户执行。
+
+示例：
+
+```bash
+#!/bin/echo
+# /home/user1/lib/comm_function.lib
+
+function add {
+    echo "`expr $1 + $2`"
+}
+```
+
+```bash
+#!/bin/bash
+# /home/user1/test.sh
+
+# 引入函数库文件
+# 使用绝对 或 相对路径
+. ./lib/comm_function.lib
+
+# 使用文件中的函数
+add 1 3
+```
+
+```bash
+➜  sh -x test_functions.sh
++ . ./lib/comm_function.lib
++ add 1 3
+++ expr 1 + 3
++ echo 4
+4
+```
+
+### 8. 常用命令
+
+#### 8.1. find 命令
+
+语法：`find [路径] [选项] [操作]`
+
+
+##### 选项
+
+选项 | 说明 | 选项 | 说明
+---|---|---|---
+`-name` | 文件名 | `-iname` | 文件名（忽略大小写）
+`-perm 777` | 文件权限 | `-type f|d|l|c|b|p` | 文件类型
+`-user` | 文件属主 | `-nouser` | 无有效属主
+`-group` | 文件属组 | `-nogroup` | 无有效属组
+`-size -n|+n` | 文件大小 | `-prune` | 排除某些查找目录（通常与 `-path` 一同使用）
+`-mindepth n` | 从 n 级子目录开始查找 | `-maxdepth n` | 最多搜索到 n 级子目录
+`-mtime -n|+n` | 文件修改时间（天） | `-mmin -n|+n` | 文件修改时间（分钟）
+`-newer file1` | 文件修改时间比 file1 早 | |
+
+
+示例：
+
+
+```bash
+# 文件名
+➜  find /etc/ -name '*.conf'
+
+# 文件类型
+# f 文件；d 目录；c 字符设备文件；
+# b 块设备文件；l 链接文件；p 管道文件
+➜  find /etc/ -type f
+
+# 文件大小
+# -n 小于等于；+n 大于等于
+➜  find . -size +100M
+➜  find . -size -10k
+
+# 文件修改时间
+# -n < n天以内修改过的文件；
+# n = n 天修改过得文件；
+# +n > n天以外修改过的文件；
+➜  find . -mtime -3
+➜  find . -mtime 3
+➜  find . -mtime +3
+
+# 排除目录
+# -path ./test1 -prune 排除 test1 目录
+# -path ./test2 -prune 排除 test2 目录
+# -o type f 固定结尾写法
+➜  find . -path ./test1 -prune -o -path ./test2 -prune -o type f
+```
+
+##### 操作
+
+- `-print` 打印输出
+- `-exec 'command' {} \;` 其中 `{}` 是前面查找匹配到的结果
+- `-ok` 与 exec 功能一样，但每次操作都给用户提示，由用户决定是否执行对应的操作。
+
+示例：
+
+```bash
+# 查找 30 天以前的日志文件并删除
+➜  find /var/log -name '*.log' -mtime +30 -exec rm -f {} \;
+
+# 查找所有 .conf 文件，并移动到指定目录
+➜  find /etc/apache -name '*.conf' -exec cp {} /home/user1/backup \;
+```
+
+#### 8.2. echo 命令
 
 用于字符串的输出，基本格式 `echo string`。
 
 使用示例：
 
-```
+```bash
 # 显示普通字符
-echo "It is a test" # 输出 It is a test
+➜  echo "It is a test" # 输出 It is a test
 
 # 显示转义字符
-echo "\"It is a test\"" # 输出 "It is a test"
+➜  echo "\"It is a test\"" # 输出 "It is a test"
 
 # 显示变量
 #!/bin/sh
 NAME="xiaoming"
-echo "$NAME It is a test" # 输出 xiaoming is a test
+➜  echo "$NAME It is a test" # 输出 xiaoming is a test
 
 # 显示换行
-echo -e "OK! \n" # -e 开启转义
-echo "It is a test"
+➜  echo -e "OK! \n" # -e 开启转义
+➜  echo "It is a test"
 
 # 显示不换行
-echo -e "OK! \c" # -e 开启转义 \c 不换行
-echo "It is a test"
+➜  echo -e "OK! \c" # -e 开启转义 \c 不换行
+➜  echo "It is a test"
 
 # 显示结果定向至文件
-echo "It is a test" > myfile
+➜  echo "It is a test" > myfile
 
 # 显示命令执行结果
-echo `date`
+➜  echo `date`
 ```
 
-#### 7.2. printf 命令
+#### 8.3. printf 命令
 
 模仿 C 程序库（library）里的 printf() 程序，主要用于格式化输出。
 
@@ -602,8 +676,8 @@ echo `date`
 
 其基本语法格式为：
 
-```
-printf  format-string  [arguments...]
+```bash
+➜  printf  format-string  [arguments...]
 ```
 
 说明：
@@ -613,7 +687,7 @@ printf  format-string  [arguments...]
 
 示例：
 
-```
+```bash
 ➜  printf "%-10s %-8s %-4s\n" 姓名 性别 体重kg
 ➜  printf "%-10s %-8s %-4.2f\n" 郭靖 男 66.1234
 ➜  printf "%-10s %-8s %-4.2f\n" 杨过 男 48.6543
@@ -632,7 +706,7 @@ printf  format-string  [arguments...]
 
 更多使用示例：
 
-```
+```bash
 # 没有引号也可以输出
 ➜  printf %s abcdef
 
@@ -649,13 +723,13 @@ def
  and 0
 ```
 
-#### 7.3. test 命令
+#### 8.4. test 命令
 
 用于检查某个条件是否成立，它可以进行数值、字符和文件三个方面的测试（详见[第3节](#3-运算符)对应的运算符部分）。
 
 基本使用示例：
 
-```
+```bash
 cd /bin
 if test -e ./bash
 then
@@ -665,10 +739,68 @@ else
 fi
 ```
 
-test 可以被 `[ ]` 替代，但是其中的内容需要以空格分隔；变量建议用双引号括起来。
+### 9. 补充
 
+#### 9.1. 变量替换
 
-#### 7.4. [ ... ] 与 [[ ... ]]
+规则 | 说明 | 示例 `var="Hello shell"`
+---|---|---
+`${变量#匹配规则}` | 从头开始匹配，最短删除 | `${var#*e}` => `llo shell`
+`${变量##匹配规则}` | 从头开始匹配，最长删除 | `${var##*e}` => `ll`
+`${变量%匹配规则}` | 从尾开始匹配，最短删除 | `${var%e*}` => `Hello sh`
+`${变量%%匹配规则}` | 从尾开始匹配，最长删除 | `${var%%e*}` => `H`
+`${变量/旧字符串/新字符串}` | 只替换匹配到的第一个 | `${var/e/*}` => `H*llo shell`
+`${变量//旧字符串/新字符串}` | 全部替换 | `${var//e/*}` => `H*llo sh*ll`
+
+#### 9.2. 有类型变量
+
+shell 中变量默认都是**字符串**，除非使用以下方式声明。
+
+declare 或 typeset 参数 | 说明
+---|---
+-r | 只读
+-i | 整数
+-a | 数组
+-f | 在脚本中显示定义的函数和内容
+-F | 在脚本中显示定义的函数
+-X | 将变量声明为环境变量
+
+示例：
+
+```bash
+➜  declare -r var1="hello shell type"
+➜  var1="hello lalala"
+zsh: read-only variable: var1
+```
+
+#### 9.3. 使用 bc 进行浮点数运算
+
+系统内置，支持 `+`、`-`、`*`、`/`、`^ 指数`、`% 取余`，并使用 `scale` 指定小数位数，默认 `0`。
+
+示例：
+
+```bash
+➜  which bc
+/usr/bin/bc
+
+# 示例
+➜  echo "5+4" | bc
+9
+➜  echo "5-4" | bc
+1
+➜  echo "5*4" | bc
+20
+➜  echo "5/4" | bc
+1
+➜  echo "scale=3;5/4" | bc
+1.250
+➜  echo "5%4" | bc
+1
+➜  echo "5^4" | bc
+625
+```
+
+#### 9.4. [ ... ] 与 [[ ... ]]
 
 - `[[` 是关键字，许多 shell 并不支持这种方式。
     - 所有的字符都不会被文件扩展或是标记分割，但是会有参数引用和命令替换；
@@ -678,15 +810,4 @@ test 可以被 `[ ]` 替代，但是其中的内容需要以空格分隔；变�
     - 在其中的表达式应是它的命令行参数，所以串比较操作符 `>` 与 `<` 必须转义，否则就变成 IO 重定向操作符了。
     - 不会进行算术扩展。
 
-#### 7.5. 包含文件
-
-> 被包含的文件不需要可执行权限。
-
-```
-# 方式一
-. another_file.sh
-
-# 方式二
-source another_file.sh
-```
 
